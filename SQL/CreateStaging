@@ -1,0 +1,431 @@
+-- SQL Script zur Erstellung einer Staging-Datenbank für Ergast F1-Daten
+-- Das Schema folgt der Struktur der Ergast API
+
+-- Tabelle für Saisons
+CREATE TABLE staging_seasons (
+    season_id INT PRIMARY KEY,
+    year INT NOT NULL,
+    url VARCHAR(255),
+    load_date DATETIME2 DEFAULT CURRENT_TIMESTAMP,
+    record_source VARCHAR(100) DEFAULT 'ergast'
+);
+
+-- Tabelle für Rennstrecken
+CREATE TABLE staging_circuits (
+    circuit_id VARCHAR(50) PRIMARY KEY,
+    circuit_ref VARCHAR(50) NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    location VARCHAR(255),
+    country VARCHAR(100),
+    lat DECIMAL(9,6),
+    lng DECIMAL(9,6),
+    alt INT,
+    url VARCHAR(255),
+    load_date DATETIME2 DEFAULT CURRENT_TIMESTAMP,
+    record_source VARCHAR(100) DEFAULT 'ergast'
+);
+
+-- Tabelle für Konstrukteure (Teams)
+CREATE TABLE staging_constructors (
+    constructor_id VARCHAR(50) PRIMARY KEY,
+    constructor_ref VARCHAR(50) NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    nationality VARCHAR(100),
+    url VARCHAR(255),
+    load_date DATETIME2 DEFAULT CURRENT_TIMESTAMP,
+    record_source VARCHAR(100) DEFAULT 'ergast'
+);
+
+-- Tabelle für Fahrer
+CREATE TABLE staging_drivers (
+    driver_id VARCHAR(50) PRIMARY KEY,
+    driver_ref VARCHAR(50) NOT NULL,
+    number VARCHAR(10),
+    code VARCHAR(3),
+    forename VARCHAR(50) NOT NULL,
+    surname VARCHAR(50) NOT NULL,
+    dob DATE,
+    nationality VARCHAR(100),
+    url VARCHAR(255),
+    load_date DATETIME2 DEFAULT CURRENT_TIMESTAMP,
+    record_source VARCHAR(100) DEFAULT 'ergast'
+);
+
+-- Tabelle für die Rennen
+CREATE TABLE staging_races (
+    race_id INT PRIMARY KEY,
+    year INT NOT NULL,
+    round INT NOT NULL,
+    circuit_id VARCHAR(50) NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    date DATE NOT NULL,
+    time TIME,
+    url VARCHAR(255),
+    fp1_date DATE,
+    fp1_time TIME,
+    fp2_date DATE,
+    fp2_time TIME,
+    fp3_date DATE,
+    fp3_time TIME,
+    quali_date DATE,
+    quali_time TIME,
+    sprint_date DATE,
+    sprint_time TIME,
+    load_date DATETIME2 DEFAULT CURRENT_TIMESTAMP,
+    record_source VARCHAR(100) DEFAULT 'ergast',
+    FOREIGN KEY (circuit_id) REFERENCES staging_circuits(circuit_id)
+);
+
+-- Tabelle für Qualifying-Ergebnisse
+CREATE TABLE staging_qualifying (
+    qualify_id INT PRIMARY KEY,
+    race_id INT NOT NULL,
+    driver_id VARCHAR(50) NOT NULL,
+    constructor_id VARCHAR(50) NOT NULL,
+    number INT NOT NULL,
+    position INT,
+    q1 VARCHAR(20),
+    q2 VARCHAR(20),
+    q3 VARCHAR(20),
+    load_date DATETIME2 DEFAULT CURRENT_TIMESTAMP,
+    record_source VARCHAR(100) DEFAULT 'ergast',
+    FOREIGN KEY (race_id) REFERENCES staging_races(race_id),
+    FOREIGN KEY (driver_id) REFERENCES staging_drivers(driver_id),
+    FOREIGN KEY (constructor_id) REFERENCES staging_constructors(constructor_id)
+);
+
+-- Tabelle für Sprint-Ergebnisse
+CREATE TABLE staging_sprint_results (
+    sprint_result_id INT PRIMARY KEY,
+    race_id INT NOT NULL,
+    driver_id VARCHAR(50) NOT NULL,
+    constructor_id VARCHAR(50) NOT NULL,
+    number INT,
+    grid INT,
+    position INT,
+    position_text VARCHAR(10),
+    position_order INT,
+    points DECIMAL(4,1),
+    laps INT,
+    time VARCHAR(20),
+    milliseconds INT,
+    fastest_lap INT,
+    fastest_lap_time VARCHAR(20),
+    status_id INT,
+    load_date DATETIME2 DEFAULT CURRENT_TIMESTAMP,
+    record_source VARCHAR(100) DEFAULT 'ergast',
+    FOREIGN KEY (race_id) REFERENCES staging_races(race_id),
+    FOREIGN KEY (driver_id) REFERENCES staging_drivers(driver_id),
+    FOREIGN KEY (constructor_id) REFERENCES staging_constructors(constructor_id)
+);
+
+-- Tabelle für Rennergebnisse
+CREATE TABLE staging_results (
+    result_id INT PRIMARY KEY,
+    race_id INT NOT NULL,
+    driver_id VARCHAR(50) NOT NULL,
+    constructor_id VARCHAR(50) NOT NULL,
+    number INT,
+    grid INT,
+    position INT,
+    position_text VARCHAR(10),
+    position_order INT,
+    points DECIMAL(4,1),
+    laps INT,
+    time VARCHAR(20),
+    milliseconds INT,
+    fastest_lap INT,
+    rank INT,
+    fastest_lap_time VARCHAR(20),
+    fastest_lap_speed DECIMAL(6,3),
+    status_id INT,
+    load_date DATETIME2 DEFAULT CURRENT_TIMESTAMP,
+    record_source VARCHAR(100) DEFAULT 'ergast',
+    FOREIGN KEY (race_id) REFERENCES staging_races(race_id),
+    FOREIGN KEY (driver_id) REFERENCES staging_drivers(driver_id),
+    FOREIGN KEY (constructor_id) REFERENCES staging_constructors(constructor_id)
+);
+
+-- Tabelle für Fahrerwertung
+CREATE TABLE staging_driver_standings (
+    driver_standing_id INT PRIMARY KEY,
+    race_id INT NOT NULL,
+    driver_id VARCHAR(50) NOT NULL,
+    points DECIMAL(6,2) NOT NULL,
+    position INT,
+    position_text VARCHAR(10),
+    wins INT,
+    load_date DATETIME2 DEFAULT CURRENT_TIMESTAMP,
+    record_source VARCHAR(100) DEFAULT 'ergast',
+    FOREIGN KEY (race_id) REFERENCES staging_races(race_id),
+    FOREIGN KEY (driver_id) REFERENCES staging_drivers(driver_id)
+);
+
+-- Tabelle für Konstrukteurswertung
+CREATE TABLE staging_constructor_standings (
+    constructor_standing_id INT PRIMARY KEY,
+    race_id INT NOT NULL,
+    constructor_id VARCHAR(50) NOT NULL,
+    points DECIMAL(6,2) NOT NULL,
+    position INT,
+    position_text VARCHAR(10),
+    wins INT,
+    load_date DATETIME2 DEFAULT CURRENT_TIMESTAMP,
+    record_source VARCHAR(100) DEFAULT 'ergast',
+    FOREIGN KEY (race_id) REFERENCES staging_races(race_id),
+    FOREIGN KEY (constructor_id) REFERENCES staging_constructors(constructor_id)
+);
+
+-- Tabelle für Statuscodes
+CREATE TABLE staging_status (
+    status_id INT PRIMARY KEY,
+    status VARCHAR(255) NOT NULL,
+    load_date DATETIME2 DEFAULT CURRENT_TIMESTAMP,
+    record_source VARCHAR(100) DEFAULT 'ergast'
+);
+
+-- Tabelle für Rundenzeiten
+CREATE TABLE staging_lap_times (
+    race_id INT,
+    driver_id VARCHAR(50),
+    lap INT,
+    position INT,
+    time VARCHAR(20),
+    milliseconds INT,
+    load_date DATETIME2 DEFAULT CURRENT_TIMESTAMP,
+    record_source VARCHAR(100) DEFAULT 'ergast',
+    PRIMARY KEY (race_id, driver_id, lap),
+    FOREIGN KEY (race_id) REFERENCES staging_races(race_id),
+    FOREIGN KEY (driver_id) REFERENCES staging_drivers(driver_id)
+);
+
+-- Tabelle für Boxenstopps
+CREATE TABLE staging_pit_stops (
+    race_id INT,
+    driver_id VARCHAR(50),
+    stop INT,
+    lap INT,
+    time TIME,
+    duration VARCHAR(20),
+    milliseconds INT,
+    load_date DATETIME2 DEFAULT CURRENT_TIMESTAMP,
+    record_source VARCHAR(100) DEFAULT 'ergast',
+    PRIMARY KEY (race_id, driver_id, stop),
+    FOREIGN KEY (race_id) REFERENCES staging_races(race_id),
+    FOREIGN KEY (driver_id) REFERENCES staging_drivers(driver_id)
+);-- SQL Script zur Erstellung einer Staging-Datenbank für Ergast F1-Daten
+-- Das Schema folgt der Struktur der Ergast API
+
+-- Tabelle für Saisons
+CREATE TABLE staging_seasons (
+    season_id INT PRIMARY KEY,
+    year INT NOT NULL,
+    url VARCHAR(255),
+    load_date DATETIME2 DEFAULT CURRENT_TIMESTAMP,
+    record_source VARCHAR(100) DEFAULT 'ergast'
+);
+
+-- Tabelle für Rennstrecken
+CREATE TABLE staging_circuits (
+    circuit_id VARCHAR(50) PRIMARY KEY,
+    circuit_ref VARCHAR(50) NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    location VARCHAR(255),
+    country VARCHAR(100),
+    lat DECIMAL(9,6),
+    lng DECIMAL(9,6),
+    alt INT,
+    url VARCHAR(255),
+    load_date DATETIME2 DEFAULT CURRENT_TIMESTAMP,
+    record_source VARCHAR(100) DEFAULT 'ergast'
+);
+
+-- Tabelle für Konstrukteure (Teams)
+CREATE TABLE staging_constructors (
+    constructor_id VARCHAR(50) PRIMARY KEY,
+    constructor_ref VARCHAR(50) NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    nationality VARCHAR(100),
+    url VARCHAR(255),
+    load_date DATETIME2 DEFAULT CURRENT_TIMESTAMP,
+    record_source VARCHAR(100) DEFAULT 'ergast'
+);
+
+-- Tabelle für Fahrer
+CREATE TABLE staging_drivers (
+    driver_id VARCHAR(50) PRIMARY KEY,
+    driver_ref VARCHAR(50) NOT NULL,
+    number VARCHAR(10),
+    code VARCHAR(3),
+    forename VARCHAR(50) NOT NULL,
+    surname VARCHAR(50) NOT NULL,
+    dob DATE,
+    nationality VARCHAR(100),
+    url VARCHAR(255),
+    load_date DATETIME2 DEFAULT CURRENT_TIMESTAMP,
+    record_source VARCHAR(100) DEFAULT 'ergast'
+);
+
+-- Tabelle für die Rennen
+CREATE TABLE staging_races (
+    race_id INT PRIMARY KEY,
+    year INT NOT NULL,
+    round INT NOT NULL,
+    circuit_id VARCHAR(50) NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    date DATE NOT NULL,
+    time TIME,
+    url VARCHAR(255),
+    fp1_date DATE,
+    fp1_time TIME,
+    fp2_date DATE,
+    fp2_time TIME,
+    fp3_date DATE,
+    fp3_time TIME,
+    quali_date DATE,
+    quali_time TIME,
+    sprint_date DATE,
+    sprint_time TIME,
+    load_date DATETIME2 DEFAULT CURRENT_TIMESTAMP,
+    record_source VARCHAR(100) DEFAULT 'ergast',
+    FOREIGN KEY (circuit_id) REFERENCES staging_circuits(circuit_id)
+);
+
+-- Tabelle für Qualifying-Ergebnisse
+CREATE TABLE staging_qualifying (
+    qualify_id INT PRIMARY KEY,
+    race_id INT NOT NULL,
+    driver_id VARCHAR(50) NOT NULL,
+    constructor_id VARCHAR(50) NOT NULL,
+    number INT NOT NULL,
+    position INT,
+    q1 VARCHAR(20),
+    q2 VARCHAR(20),
+    q3 VARCHAR(20),
+    load_date DATETIME2 DEFAULT CURRENT_TIMESTAMP,
+    record_source VARCHAR(100) DEFAULT 'ergast',
+    FOREIGN KEY (race_id) REFERENCES staging_races(race_id),
+    FOREIGN KEY (driver_id) REFERENCES staging_drivers(driver_id),
+    FOREIGN KEY (constructor_id) REFERENCES staging_constructors(constructor_id)
+);
+
+-- Tabelle für Sprint-Ergebnisse
+CREATE TABLE staging_sprint_results (
+    sprint_result_id INT PRIMARY KEY,
+    race_id INT NOT NULL,
+    driver_id VARCHAR(50) NOT NULL,
+    constructor_id VARCHAR(50) NOT NULL,
+    number INT,
+    grid INT,
+    position INT,
+    position_text VARCHAR(10),
+    position_order INT,
+    points DECIMAL(4,1),
+    laps INT,
+    time VARCHAR(20),
+    milliseconds INT,
+    fastest_lap INT,
+    fastest_lap_time VARCHAR(20),
+    status_id INT,
+    load_date DATETIME2 DEFAULT CURRENT_TIMESTAMP,
+    record_source VARCHAR(100) DEFAULT 'ergast',
+    FOREIGN KEY (race_id) REFERENCES staging_races(race_id),
+    FOREIGN KEY (driver_id) REFERENCES staging_drivers(driver_id),
+    FOREIGN KEY (constructor_id) REFERENCES staging_constructors(constructor_id)
+);
+
+-- Tabelle für Rennergebnisse
+CREATE TABLE staging_results (
+    result_id INT PRIMARY KEY,
+    race_id INT NOT NULL,
+    driver_id VARCHAR(50) NOT NULL,
+    constructor_id VARCHAR(50) NOT NULL,
+    number INT,
+    grid INT,
+    position INT,
+    position_text VARCHAR(10),
+    position_order INT,
+    points DECIMAL(4,1),
+    laps INT,
+    time VARCHAR(20),
+    milliseconds INT,
+    fastest_lap INT,
+    rank INT,
+    fastest_lap_time VARCHAR(20),
+    fastest_lap_speed DECIMAL(6,3),
+    status_id INT,
+    load_date DATETIME2 DEFAULT CURRENT_TIMESTAMP,
+    record_source VARCHAR(100) DEFAULT 'ergast',
+    FOREIGN KEY (race_id) REFERENCES staging_races(race_id),
+    FOREIGN KEY (driver_id) REFERENCES staging_drivers(driver_id),
+    FOREIGN KEY (constructor_id) REFERENCES staging_constructors(constructor_id)
+);
+
+-- Tabelle für Fahrerwertung
+CREATE TABLE staging_driver_standings (
+    driver_standing_id INT PRIMARY KEY,
+    race_id INT NOT NULL,
+    driver_id VARCHAR(50) NOT NULL,
+    points DECIMAL(6,2) NOT NULL,
+    position INT,
+    position_text VARCHAR(10),
+    wins INT,
+    load_date DATETIME2 DEFAULT CURRENT_TIMESTAMP,
+    record_source VARCHAR(100) DEFAULT 'ergast',
+    FOREIGN KEY (race_id) REFERENCES staging_races(race_id),
+    FOREIGN KEY (driver_id) REFERENCES staging_drivers(driver_id)
+);
+
+-- Tabelle für Konstrukteurswertung
+CREATE TABLE staging_constructor_standings (
+    constructor_standing_id INT PRIMARY KEY,
+    race_id INT NOT NULL,
+    constructor_id VARCHAR(50) NOT NULL,
+    points DECIMAL(6,2) NOT NULL,
+    position INT,
+    position_text VARCHAR(10),
+    wins INT,
+    load_date DATETIME2 DEFAULT CURRENT_TIMESTAMP,
+    record_source VARCHAR(100) DEFAULT 'ergast',
+    FOREIGN KEY (race_id) REFERENCES staging_races(race_id),
+    FOREIGN KEY (constructor_id) REFERENCES staging_constructors(constructor_id)
+);
+
+-- Tabelle für Statuscodes
+CREATE TABLE staging_status (
+    status_id INT PRIMARY KEY,
+    status VARCHAR(255) NOT NULL,
+    load_date DATETIME2 DEFAULT CURRENT_TIMESTAMP,
+    record_source VARCHAR(100) DEFAULT 'ergast'
+);
+
+-- Tabelle für Rundenzeiten
+CREATE TABLE staging_lap_times (
+    race_id INT,
+    driver_id VARCHAR(50),
+    lap INT,
+    position INT,
+    time VARCHAR(20),
+    milliseconds INT,
+    load_date DATETIME2 DEFAULT CURRENT_TIMESTAMP,
+    record_source VARCHAR(100) DEFAULT 'ergast',
+    PRIMARY KEY (race_id, driver_id, lap),
+    FOREIGN KEY (race_id) REFERENCES staging_races(race_id),
+    FOREIGN KEY (driver_id) REFERENCES staging_drivers(driver_id)
+);
+
+-- Tabelle für Boxenstopps
+CREATE TABLE staging_pit_stops (
+    race_id INT,
+    driver_id VARCHAR(50),
+    stop INT,
+    lap INT,
+    time TIME,
+    duration VARCHAR(20),
+    milliseconds INT,
+    load_date DATETIME2 DEFAULT CURRENT_TIMESTAMP,
+    record_source VARCHAR(100) DEFAULT 'ergast',
+    PRIMARY KEY (race_id, driver_id, stop),
+    FOREIGN KEY (race_id) REFERENCES staging_races(race_id),
+    FOREIGN KEY (driver_id) REFERENCES staging_drivers(driver_id)
+);
